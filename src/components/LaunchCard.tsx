@@ -40,26 +40,31 @@ export function LaunchCard({ launch, variant = 'default' }: LaunchCardProps) {
   };
 
   return (
-    <div className="group bg-surface/80 backdrop-blur-sm rounded-lg border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-card-hover overflow-hidden">
+    <div className="group bg-surface/80 backdrop-blur-sm rounded-xl border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-card-hover hover:scale-[1.02] overflow-hidden">
       {/* Header */}
       <div className="p-6 pb-4">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg flex items-center justify-center">
+            <div className="relative w-12 h-12 bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl flex items-center justify-center group-hover:shadow-glow transition-all">
               <span className="text-lg font-bold">{launch.symbol.charAt(0)}</span>
+              {launch.isVerified && (
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                  <Shield className="h-2.5 w-2.5 text-white" />
+                </div>
+              )}
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h3 className="font-semibold text-lg">{launch.name}</h3>
-                {launch.isVerified && (
-                  <Shield className="h-4 w-4 text-primary" />
-                )}
+                <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">{launch.name}</h3>
               </div>
               <p className="text-text-muted">${launch.symbol}</p>
             </div>
           </div>
-          <div className={`px-2 py-1 rounded-md text-xs font-medium ${healthColor} bg-surface-hover`}>
-            {launch.healthScore}/100
+          <div className={`px-3 py-1.5 rounded-lg text-xs font-medium ${healthColor} bg-surface-hover border border-border/50`}>
+            <div className="text-center">
+              <div className="font-bold">{launch.healthScore}</div>
+              <div className="text-[10px] opacity-75">HEALTH</div>
+            </div>
           </div>
         </div>
 
@@ -87,18 +92,18 @@ export function LaunchCard({ launch, variant = 'default' }: LaunchCardProps) {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-text-muted text-xs mb-1">Volume</div>
-            <div className="font-semibold">${formatNumber(launch.volume24h)}</div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+          <div className="bg-surface-hover/50 rounded-lg p-2 sm:p-3">
+            <div className="text-text-muted text-[10px] sm:text-xs mb-1">Volume</div>
+            <div className="font-semibold text-xs sm:text-sm">${formatNumber(launch.volume24h)}</div>
           </div>
-          <div>
-            <div className="text-text-muted text-xs mb-1">Market Cap</div>
-            <div className="font-semibold">${formatNumber(launch.marketCap)}</div>
+          <div className="bg-surface-hover/50 rounded-lg p-2 sm:p-3">
+            <div className="text-text-muted text-[10px] sm:text-xs mb-1">Market Cap</div>
+            <div className="font-semibold text-xs sm:text-sm">${formatNumber(launch.marketCap)}</div>
           </div>
-          <div>
-            <div className="text-text-muted text-xs mb-1">Holders</div>
-            <div className="font-semibold">{formatNumber(launch.holders)}</div>
+          <div className="bg-surface-hover/50 rounded-lg p-2 sm:p-3">
+            <div className="text-text-muted text-[10px] sm:text-xs mb-1">Holders</div>
+            <div className="font-semibold text-xs sm:text-sm">{formatNumber(launch.holders)}</div>
           </div>
         </div>
       </div>

@@ -110,18 +110,25 @@ export function LaunchWizard() {
             
             return (
               <div key={index} className="flex items-center">
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${
-                  isActive 
-                    ? 'border-primary bg-primary text-white' 
-                    : isCompleted 
-                    ? 'border-primary bg-primary/20 text-primary'
-                    : 'border-border bg-surface-hover text-text-muted'
-                }`}>
+                <div 
+                  className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all cursor-pointer relative ${
+                    isActive 
+                      ? 'border-primary bg-primary text-white shadow-glow animate-pulse' 
+                      : isCompleted 
+                      ? 'border-primary bg-primary/20 text-primary hover:bg-primary/30'
+                      : 'border-border bg-surface-hover text-text-muted'
+                  }`}
+                  onClick={() => isCompleted && setCurrentStep(index)}
+                  title={step.title}
+                >
                   <Icon className="h-5 w-5" />
+                  {isActive && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full animate-bounce"></div>
+                  )}
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={`w-16 h-0.5 mx-2 ${
-                    isCompleted ? 'bg-primary' : 'bg-border'
+                  <div className={`w-16 h-0.5 mx-2 transition-all ${
+                    isCompleted ? 'bg-gradient-to-r from-primary to-accent' : 'bg-border'
                   }`} />
                 )}
               </div>

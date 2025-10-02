@@ -196,12 +196,29 @@ export function SwapWidget() {
       {/* Swap Button */}
       <button
         onClick={handleSwap}
-        disabled={!fromAmount || !toAmount || isSwapping}
-        className="w-full py-4 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
+        disabled={!fromAmount || !toAmount || isSwapping || priceImpact > 15}
+        className={`w-full py-4 font-semibold rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 ${
+          priceImpact > 15 
+            ? 'bg-danger/20 text-danger cursor-not-allowed'
+            : priceImpact > 5
+            ? 'bg-warning hover:bg-warning/80 text-black'
+            : 'bg-primary hover:bg-primary-hover text-white shadow-glow hover:shadow-card-hover'
+        } disabled:opacity-50 disabled:cursor-not-allowed`}
       >
         <Zap className="h-5 w-5" />
         <span>
-          {isSwapping ? 'Swapping...' : `Swap ${fromToken} for ${toToken}`}
+          {isSwapping ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+              Swapping...
+            </>
+          ) : priceImpact > 15 ? (
+            'Price Impact Too High'
+          ) : priceImpact > 5 ? (
+            `High Impact Swap ${fromToken} → ${toToken}`
+          ) : (
+            `Swap ${fromToken} → ${toToken}`
+          )}
         </span>
       </button>
 

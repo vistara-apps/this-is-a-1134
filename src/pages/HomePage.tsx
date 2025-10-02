@@ -24,17 +24,21 @@ export function HomePage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link
                 to="/launch"
-                className="inline-flex items-center px-8 py-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-lg transition-all duration-200 shadow-glow hover:shadow-card-hover transform hover:scale-105"
+                className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-primary to-primary-hover text-white font-semibold rounded-xl transition-all duration-200 shadow-glow hover:shadow-card-hover transform hover:scale-105 relative overflow-hidden"
               >
-                <Rocket className="h-5 w-5 mr-2" />
-                Start Launch
+                <div className="absolute inset-0 bg-gradient-to-r from-accent/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                <Rocket className="h-5 w-5 mr-2 relative z-10" />
+                <span className="relative z-10">Start Launch</span>
+                <div className="absolute right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-x-2 group-hover:translate-x-0">
+                  →
+                </div>
               </Link>
               <Link
                 to="/dashboard"
-                className="inline-flex items-center px-8 py-4 bg-surface hover:bg-surface-hover text-text border border-border font-semibold rounded-lg transition-all duration-200"
+                className="group inline-flex items-center px-8 py-4 bg-surface hover:bg-surface-hover text-text border border-border font-semibold rounded-xl transition-all duration-200 hover:border-primary/50"
               >
-                <BarChart3 className="h-5 w-5 mr-2" />
-                View Dashboard
+                <BarChart3 className="h-5 w-5 mr-2 group-hover:text-primary transition-colors" />
+                <span className="group-hover:text-primary transition-colors">View Dashboard</span>
               </Link>
             </div>
           </div>

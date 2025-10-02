@@ -28,7 +28,7 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-2">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
@@ -36,14 +36,17 @@ export function Header() {
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 relative ${
                     isActive
-                      ? 'bg-primary text-white'
+                      ? 'bg-primary text-white shadow-glow'
                       : 'text-text-muted hover:text-text hover:bg-surface-hover'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
                   <span className="text-sm font-medium">{item.name}</span>
+                  {isActive && (
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-accent rounded-full"></div>
+                  )}
                 </Link>
               );
             })}

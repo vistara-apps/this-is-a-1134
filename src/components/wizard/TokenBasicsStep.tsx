@@ -26,23 +26,30 @@ export function TokenBasicsStep({ data, updateData }: TokenBasicsStepProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-medium mb-2">Token Name</label>
+          <label htmlFor="token-name" className="block text-sm font-medium mb-2">Token Name</label>
           <div className="relative">
             <input
+              id="token-name"
               type="text"
               value={data.name}
               onChange={(e) => updateData({ name: e.target.value })}
               placeholder="e.g. Awesome Token"
-              className="w-full px-4 py-3 bg-surface border border-border rounded-lg focus:border-primary focus:outline-none transition-colors"
+              className="w-full px-4 py-3 bg-surface border border-border rounded-lg focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              aria-describedby="token-name-help"
+              required
             />
             <button
               onClick={suggestName}
-              className="absolute right-3 top-3 text-accent hover:text-accent-hover transition-colors"
+              className="absolute right-3 top-3 text-accent hover:text-accent-hover transition-colors focus:outline-none focus:ring-2 focus:ring-accent/20 rounded"
               title="Generate random name"
+              aria-label="Generate random token name"
             >
               <Sparkles className="h-5 w-5" />
             </button>
           </div>
+          <p id="token-name-help" className="text-xs text-text-muted mt-1">
+            Choose a memorable name for your token
+          </p>
         </div>
 
         <div>
