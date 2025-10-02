@@ -1,5 +1,6 @@
 import { Address, formatEther, formatUnits } from 'viem';
 import { LaunchData } from '../components/LaunchWizard';
+import { XLayerAPIService, OkieTokenData } from './xlayer-api';
 
 export interface TokenData {
   address: Address;
@@ -30,6 +31,11 @@ export interface SwapQuote {
 
 export class BlockchainService {
   private static instance: BlockchainService;
+  private xlayerAPI: XLayerAPIService;
+
+  constructor() {
+    this.xlayerAPI = XLayerAPIService.getInstance();
+  }
 
   public static getInstance(): BlockchainService {
     if (!BlockchainService.instance) {
@@ -73,25 +79,11 @@ export class BlockchainService {
   // Get token information
   async getTokenInfo(tokenAddress: Address): Promise<TokenData | null> {
     try {
-      // This would integrate with the useTokenInfo hook
-      // Mock data for now
-      return {
-        address: tokenAddress,
-        name: 'Mock Token',
-        symbol: 'MOCK',
-        decimals: 18,
-        totalSupply: BigInt('1000000000000000000000000'), // 1M tokens
-        creator: '0x1234567890123456789012345678901234567890' as Address,
-        createdAt: Date.now() - 86400000, // 1 day ago
-        price: 0.00012,
-        marketCap: 120000,
-        volume24h: 25000,
-        holders: 247,
-        healthScore: 85,
-        isVerified: true,
-        liquidityLocked: true,
-        lockDuration: 90,
-      };
+      const response = await this.xlayerAPI.getTokenDetails(tokenAddress);
+      if (response.code === 0 && response.data) {
+        return this.xlayerAPI.formatTokenData(response.data);
+      }
+      return null;
     } catch (error) {
       console.error('Error fetching token info:', error);
       return null;
@@ -179,44 +171,11 @@ export class BlockchainService {
   // Get all tokens created by a user
   async getUserTokens(userAddress: Address): Promise<TokenData[]> {
     try {
-      // This would integrate with the useTokensByCreator hook
-      // Mock data for now
-      return [
-        {
-          address: '0x1111111111111111111111111111111111111111' as Address,
-          name: 'My First Token',
-          symbol: 'MFT',
-          decimals: 18,
-          totalSupply: BigInt('1000000000000000000000000'),
-          creator: userAddress,
-          createdAt: Date.now() - 172800000, // 2 days ago
-          price: 0.00015,
-          marketCap: 150000,
-          volume24h: 30000,
-          holders: 156,
-          healthScore: 92,
-          isVerified: true,
-          liquidityLocked: true,
-          lockDuration: 90,
-        },
-        {
-          address: '0x2222222222222222222222222222222222222222' as Address,
-          name: 'Another Token',
-          symbol: 'ANT',
-          decimals: 18,
-          totalSupply: BigInt('500000000000000000000000'),
-          creator: userAddress,
-          createdAt: Date.now() - 86400000, // 1 day ago
-          price: 0.00008,
-          marketCap: 40000,
-          volume24h: 8000,
-          holders: 89,
-          healthScore: 78,
-          isVerified: false,
-          liquidityLocked: true,
-          lockDuration: 30,
-        },
-      ];
+      const response = await this.xlayerAPI.getTokensByCreator(userAddress);
+      if (response.code === 0 && response.data.tokens) {
+        return response.data.tokens.map(token => this.xlayerAPI.formatTokenData(token));
+      }
+      return [];
     } catch (error) {
       console.error('Error fetching user tokens:', error);
       return [];
@@ -226,47 +185,74 @@ export class BlockchainService {
   // Get trending tokens
   async getTrendingTokens(): Promise<TokenData[]> {
     try {
-      // This would integrate with the useAllTokens hook and additional data
-      // Mock trending tokens for now
-      return [
-        {
-          address: '0x3333333333333333333333333333333333333333' as Address,
-          name: 'PepeAI',
-          symbol: 'PEPAI',
-          decimals: 18,
-          totalSupply: BigInt('2000000000000000000000000'),
-          creator: '0x4444444444444444444444444444444444444444' as Address,
-          createdAt: Date.now() - 259200000, // 3 days ago
-          price: 0.00012,
-          marketCap: 240000,
-          volume24h: 125000,
-          holders: 1247,
-          healthScore: 95,
-          isVerified: true,
-          liquidityLocked: true,
-          lockDuration: 365,
-        },
-        {
-          address: '0x5555555555555555555555555555555555555555' as Address,
-          name: 'MoonCoin',
-          symbol: 'MOON',
-          decimals: 18,
-          totalSupply: BigInt('1500000000000000000000000'),
-          creator: '0x6666666666666666666666666666666666666666' as Address,
-          createdAt: Date.now() - 345600000, // 4 days ago
-          price: 0.0034,
-          marketCap: 1800000,
-          volume24h: 89000,
-          holders: 892,
-          healthScore: 87,
-          isVerified: true,
-          liquidityLocked: true,
-          lockDuration: 180,
-        },
-      ];
+      const response = await this.xlayerAPI.getTrendingTokens('24h');
+      if (response.code === 0 && response.data.tokens) {
+        return response.data.tokens.map(token => this.xlayerAPI.formatTokenData(token));
+      }
+      return [];
     } catch (error) {
       console.error('Error fetching trending tokens:', error);
       return [];
+    }
+  }
+
+  // Get all tokens with pagination
+  async getAllTokens(params: {
+    page?: number;
+    pageSize?: number;
+    sort?: 'volume' | 'marketCap' | 'createdAt' | 'tradeCount';
+    order?: 'asc' | 'desc';
+    search?: string;
+  } = {}): Promise<{
+    tokens: TokenData[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
+    try {
+      const response = await this.xlayerAPI.getTokens(params);
+      if (response.code === 0 && response.data.tokens) {
+        return {
+          tokens: response.data.tokens.map(token => this.xlayerAPI.formatTokenData(token)),
+          total: response.data.total || response.data.tokens.length,
+          page: response.data.page || params.page || 1,
+          pageSize: response.data.pageSize || params.pageSize || 100
+        };
+      }
+      return {
+        tokens: [],
+        total: 0,
+        page: 1,
+        pageSize: 100
+      };
+    } catch (error) {
+      console.error('Error fetching all tokens:', error);
+      return {
+        tokens: [],
+        total: 0,
+        page: 1,
+        pageSize: 100
+      };
+    }
+  }
+
+  // Get platform statistics
+  async getPlatformStats(): Promise<{
+    totalTokens: number;
+    totalVolume: string;
+    totalTrades: number;
+    activeTokens: number;
+  }> {
+    try {
+      return await this.xlayerAPI.getTokenStats();
+    } catch (error) {
+      console.error('Error fetching platform stats:', error);
+      return {
+        totalTokens: 0,
+        totalVolume: '0',
+        totalTrades: 0,
+        activeTokens: 0
+      };
     }
   }
 

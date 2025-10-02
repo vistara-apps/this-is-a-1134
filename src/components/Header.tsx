@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Menu, X, Rocket, BarChart3, ArrowLeftRight, Users } from 'lucide-react';
 import { NetworkSwitcher } from './NetworkSwitcher';
+import { NetworkStatus } from './NetworkStatus';
 import { useAccount } from 'wagmi';
 
 export function Header() {
@@ -52,8 +53,12 @@ export function Header() {
             })}
           </nav>
 
-          {/* Network Switcher & Wallet Connect & Mobile Menu */}
+          {/* Network Status, Switcher & Wallet Connect & Mobile Menu */}
           <div className="flex items-center space-x-4">
+            <div className="hidden lg:block">
+              <NetworkStatus />
+            </div>
+            
             {isConnected && (
               <div className="hidden sm:block">
                 <NetworkSwitcher />
@@ -79,11 +84,10 @@ export function Header() {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
-            {isConnected && (
-              <div className="px-3 mb-4">
-                <NetworkSwitcher />
-              </div>
-            )}
+            <div className="px-3 mb-4 space-y-3">
+              <NetworkStatus />
+              {isConnected && <NetworkSwitcher />}
+            </div>
             
             <nav className="flex flex-col space-y-2">
               {navigation.map((item) => {

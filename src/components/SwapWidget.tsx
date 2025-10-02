@@ -5,57 +5,81 @@ import { Button } from './ui/Button';
 import { motion } from 'framer-motion';
 import { useSwap, useTokenBalance } from '../hooks/useSwap';
 import { useAccount, useBalance } from 'wagmi';
-import { BlockchainService } from '../services/blockchain';
+import { BlockchainService, TokenData } from '../services/blockchain';
+import { usePriceUpdates } from '../hooks/useWebSocket';
 import { Address } from 'viem';
 import toast from 'react-hot-toast';
 
 export function SwapWidget() {
   const [fromToken, setFromToken] = useState('ETH');
-  const [toToken, setToToken] = useState('PEPAI');
+  const [toToken, setToToken] = useState('OKIECAT');
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
   const [slippage, setSlippage] = useState(0.5);
   const [isSwapping, setIsSwapping] = useState(false);
   const [quote, setQuote] = useState<any>(null);
+  const [availableTokens, setAvailableTokens] = useState<TokenData[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const { address, isConnected } = useAccount();
   const { swapETHForTokens, swapTokensForETH, isPending, isConfirming, isSuccess } = useSwap();
   const blockchainService = BlockchainService.getInstance();
+  
+  // Get real-time price updates for the selected token
+  const priceUpdate = usePriceUpdates(
+    toToken !== 'ETH' ? availableTokens.find(t => t.symbol === toToken)?.address : undefined
+  );
 
-  const tokens = [
-    { 
-      symbol: 'ETH', 
-      name: 'Ethereum', 
-      address: '0x0000000000000000000000000000000000000000' as Address,
-      balance: '2.5', 
-      price: 2000,
-      decimals: 18
-    },
-    { 
-      symbol: 'PEPAI', 
-      name: 'PepeAI', 
-      address: '0x3333333333333333333333333333333333333333' as Address,
-      balance: '0', 
-      price: 0.00012,
-      decimals: 18
-    },
-    { 
-      symbol: 'MOON', 
-      name: 'MoonCoin', 
-      address: '0x5555555555555555555555555555555555555555' as Address,
-      balance: '1000', 
-      price: 0.0034,
-      decimals: 18
-    },
-    { 
-      symbol: 'SDOGE', 
-      name: 'SafeDoge', 
-      address: '0x7777777777777777777777777777777777777777' as Address,
-      balance: '500', 
-      price: 0.000056,
-      decimals: 18
-    }
-  ];
+  // Load available tokens from the API
+  useEffect(() => {
+    const loadTokens = async () => {
+      try {
+        setLoading(true);
+        const { tokens } = await blockchainService.getAllTokens({ 
+          pageSize: 20, 
+          sort: 'volume',
+          order: 'desc' 
+        });
+        
+        // Add ETH as the first option
+        const ethToken: TokenData = {
+          address: '0x0000000000000000000000000000000000000000' as Address,
+          name: 'Ethereum',
+          symbol: 'ETH',
+          decimals: 18,
+          totalSupply: BigInt(0),
+          creator: '0x0000000000000000000000000000000000000000' as Address,
+          createdAt: 0,
+          price: 2000, // This would come from a price feed
+          marketCap: 0,
+          volume24h: 0,
+          holders: 0,
+          healthScore: 100,
+          isVerified: true,
+          liquidityLocked: false,
+          chartData: []
+        };
+        
+        setAvailableTokens([ethToken, ...tokens]);
+      } catch (error) {
+        console.error('Error loading tokens:', error);
+        toast.error('Failed to load available tokens');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTokens();
+  }, []);
+
+  const tokens = availableTokens.map(token => ({
+    symbol: token.symbol,
+    name: token.name,
+    address: token.address,
+    balance: '0', // TODO: Get real balance
+    price: priceUpdate && token.address === priceUpdate.tokenAddress ? priceUpdate.price : token.price,
+    decimals: token.decimals
+  }));
 
   const fromTokenData = tokens.find(t => t.symbol === fromToken);
   const toTokenData = tokens.find(t => t.symbol === toToken);
