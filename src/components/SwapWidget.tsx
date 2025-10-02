@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowUpDown, Settings, AlertTriangle, Zap, TrendingUp } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { motion } from 'framer-motion';
+import { useSwap, useTokenBalance } from '../hooks/useSwap';
+import { useAccount, useBalance } from 'wagmi';
+import { BlockchainService } from '../services/blockchain';
+import { Address } from 'viem';
 import toast from 'react-hot-toast';
 
 export function SwapWidget() {
@@ -12,12 +16,45 @@ export function SwapWidget() {
   const [toAmount, setToAmount] = useState('');
   const [slippage, setSlippage] = useState(0.5);
   const [isSwapping, setIsSwapping] = useState(false);
+  const [quote, setQuote] = useState<any>(null);
+  
+  const { address, isConnected } = useAccount();
+  const { swapETHForTokens, swapTokensForETH, isPending, isConfirming, isSuccess } = useSwap();
+  const blockchainService = BlockchainService.getInstance();
 
   const tokens = [
-    { symbol: 'ETH', name: 'Ethereum', balance: '2.5', price: 2000 },
-    { symbol: 'PEPAI', name: 'PepeAI', balance: '0', price: 0.00012 },
-    { symbol: 'MOON', name: 'MoonCoin', balance: '1000', price: 0.0034 },
-    { symbol: 'SDOGE', name: 'SafeDoge', balance: '500', price: 0.000056 }
+    { 
+      symbol: 'ETH', 
+      name: 'Ethereum', 
+      address: '0x0000000000000000000000000000000000000000' as Address,
+      balance: '2.5', 
+      price: 2000,
+      decimals: 18
+    },
+    { 
+      symbol: 'PEPAI', 
+      name: 'PepeAI', 
+      address: '0x3333333333333333333333333333333333333333' as Address,
+      balance: '0', 
+      price: 0.00012,
+      decimals: 18
+    },
+    { 
+      symbol: 'MOON', 
+      name: 'MoonCoin', 
+      address: '0x5555555555555555555555555555555555555555' as Address,
+      balance: '1000', 
+      price: 0.0034,
+      decimals: 18
+    },
+    { 
+      symbol: 'SDOGE', 
+      name: 'SafeDoge', 
+      address: '0x7777777777777777777777777777777777777777' as Address,
+      balance: '500', 
+      price: 0.000056,
+      decimals: 18
+    }
   ];
 
   const fromTokenData = tokens.find(t => t.symbol === fromToken);
@@ -30,9 +67,32 @@ export function SwapWidget() {
     return toTokens.toFixed(6);
   };
 
-  const handleFromAmountChange = (value: string) => {
+  const handleFromAmountChange = async (value: string) => {
     setFromAmount(value);
-    setToAmount(calculateToAmount(value));
+    
+    if (value && fromTokenData && toTokenData && parseFloat(value) > 0) {
+      try {
+        const quote = await blockchainService.getSwapQuote(
+          fromTokenData.address,
+          toTokenData.address,
+          value,
+          slippage
+        );
+        
+        if (quote) {
+          setToAmount(quote.amountOut);
+          setQuote(quote);
+        } else {
+          setToAmount(calculateToAmount(value));
+        }
+      } catch (error) {
+        console.error('Error getting quote:', error);
+        setToAmount(calculateToAmount(value));
+      }
+    } else {
+      setToAmount('');
+      setQuote(null);
+    }
   };
 
   const handleSwapTokens = () => {
@@ -44,21 +104,64 @@ export function SwapWidget() {
   };
 
   const handleSwap = async () => {
+    if (!isConnected || !address) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
     if (!fromAmount || parseFloat(fromAmount) <= 0) {
       toast.error('Please enter a valid amount');
+      return;
+    }
+
+    if (!fromTokenData || !toTokenData) {
+      toast.error('Invalid token selection');
       return;
     }
 
     setIsSwapping(true);
     
     try {
-      // Simulate swap transaction
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.success(`Swapped ${fromAmount} ${fromToken} for ${toAmount} ${toToken}`);
-      setFromAmount('');
-      setToAmount('');
+      toast.loading('Executing swap...', { id: 'swap' });
+
+      let result;
+      if (fromToken === 'ETH') {
+        // Swapping ETH for tokens
+        result = await blockchainService.executeSwap(
+          fromTokenData.address,
+          toTokenData.address,
+          fromAmount,
+          slippage
+        );
+      } else if (toToken === 'ETH') {
+        // Swapping tokens for ETH
+        result = await blockchainService.executeSwap(
+          fromTokenData.address,
+          toTokenData.address,
+          fromAmount,
+          slippage
+        );
+      } else {
+        // Token to token swap (through ETH)
+        result = await blockchainService.executeSwap(
+          fromTokenData.address,
+          toTokenData.address,
+          fromAmount,
+          slippage
+        );
+      }
+
+      if (result.success) {
+        toast.success(`✅ Swapped ${fromAmount} ${fromToken} for ${toAmount} ${toToken}`, { id: 'swap' });
+        setFromAmount('');
+        setToAmount('');
+        setQuote(null);
+      } else {
+        throw new Error(result.error || 'Swap failed');
+      }
     } catch (error) {
-      toast.error('Swap failed. Please try again.');
+      console.error('Swap error:', error);
+      toast.error(error instanceof Error ? error.message : 'Swap failed. Please try again.', { id: 'swap' });
     } finally {
       setIsSwapping(false);
     }

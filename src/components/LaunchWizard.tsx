@@ -9,6 +9,9 @@ import { ReviewStep } from './wizard/ReviewStep';
 import { Progress } from './ui/Progress';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
+import { useTokenFactory } from '../hooks/useTokenFactory';
+import { useAccount, useChainId } from 'wagmi';
+import { BlockchainService } from '../services/blockchain';
 import toast from 'react-hot-toast';
 
 export interface LaunchData {
@@ -53,6 +56,11 @@ export function LaunchWizard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [launchData, setLaunchData] = useState<LaunchData>(initialData);
   const [isLaunching, setIsLaunching] = useState(false);
+  
+  const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { createToken, isPending, isConfirming, isSuccess, error } = useTokenFactory();
+  const blockchainService = BlockchainService.getInstance();
 
   const steps = [
     { 
@@ -104,21 +112,59 @@ export function LaunchWizard() {
   };
 
   const handleLaunch = async () => {
+    if (!isConnected || !address) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    // Validate required fields
+    if (!launchData.name || !launchData.symbol || !launchData.supply) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
     setIsLaunching(true);
     
     try {
-      // Simulate transaction
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Check if we're on the correct network
+      if (chainId !== 196 && chainId !== 195) {
+        toast.error('Please switch to X Layer network');
+        setIsLaunching(false);
+        return;
+      }
+
+      toast.loading('Deploying your token...', { id: 'launch' });
+
+      // Deploy token using the blockchain service
+      const result = await blockchainService.deployToken(launchData);
       
-      toast.success('🚀 Token launched successfully!');
-      
-      // In a real app, redirect to dashboard
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 2000);
+      if (result.success && result.tokenAddress) {
+        toast.success('🚀 Token launched successfully!', { id: 'launch' });
+        
+        // Store launch data in localStorage for dashboard
+        const launchInfo = {
+          ...launchData,
+          tokenAddress: result.tokenAddress,
+          transactionHash: result.transactionHash,
+          creator: address,
+          createdAt: Date.now(),
+        };
+        
+        const existingLaunches = JSON.parse(localStorage.getItem('userLaunches') || '[]');
+        existingLaunches.push(launchInfo);
+        localStorage.setItem('userLaunches', JSON.stringify(existingLaunches));
+        
+        // Redirect to dashboard after a short delay
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 2000);
+      } else {
+        throw new Error(result.error || 'Token deployment failed');
+      }
       
     } catch (error) {
-      toast.error('Launch failed. Please try again.');
+      console.error('Launch error:', error);
+      toast.error(error instanceof Error ? error.message : 'Launch failed. Please try again.', { id: 'launch' });
     } finally {
       setIsLaunching(false);
     }
