@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowUpDown, Settings, AlertTriangle, Zap } from 'lucide-react';
+import { ArrowUpDown, Settings, AlertTriangle, Zap, TrendingUp } from 'lucide-react';
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 export function SwapWidget() {
@@ -64,7 +67,7 @@ export function SwapWidget() {
   const priceImpact = fromAmount ? Math.min(parseFloat(fromAmount) * 0.1, 5) : 0;
 
   return (
-    <div className="bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-6">
+    <Card variant="glass" padding="lg">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">Swap Tokens</h2>
         <button className="p-2 hover:bg-surface-hover rounded-lg transition-colors">
@@ -112,12 +115,14 @@ export function SwapWidget() {
 
       {/* Swap Button */}
       <div className="flex justify-center -my-1 relative z-10">
-        <button
+        <motion.button
           onClick={handleSwapTokens}
-          className="p-2 bg-surface border border-border rounded-lg hover:bg-surface-hover transition-colors"
+          className="p-3 bg-surface border border-border rounded-full hover:bg-surface-hover transition-colors shadow-md"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
         >
           <ArrowUpDown className="h-5 w-5" />
-        </button>
+        </motion.button>
       </div>
 
       {/* To Token */}
@@ -194,21 +199,23 @@ export function SwapWidget() {
       )}
 
       {/* Swap Button */}
-      <button
+      <Button
+        variant="primary"
+        size="lg"
+        fullWidth
         onClick={handleSwap}
-        disabled={!fromAmount || !toAmount || isSwapping}
-        className="w-full py-4 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
+        disabled={!fromAmount || !toAmount}
+        loading={isSwapping}
+        icon={<Zap className="h-5 w-5" />}
+        iconPosition="left"
       >
-        <Zap className="h-5 w-5" />
-        <span>
-          {isSwapping ? 'Swapping...' : `Swap ${fromToken} for ${toToken}`}
-        </span>
-      </button>
+        {isSwapping ? 'Swapping...' : `Swap ${fromToken} for ${toToken}`}
+      </Button>
 
       {/* Gas Fee */}
       <div className="text-center text-xs text-text-muted mt-3">
         Estimated gas fee: ~$2.50 (0.00125 ETH)
       </div>
-    </div>
+    </Card>
   );
 }

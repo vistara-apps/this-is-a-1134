@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Rocket, Shield, Bot, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Rocket, Shield, Bot, Eye, DollarSign } from 'lucide-react';
 import { TokenBasicsStep } from './wizard/TokenBasicsStep';
 import { PricingStep } from './wizard/PricingStep';
 import { SafetyStep } from './wizard/SafetyStep';
 import { AIAgentStep } from './wizard/AIAgentStep';
 import { ReviewStep } from './wizard/ReviewStep';
+import { Progress } from './ui/Progress';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
 import toast from 'react-hot-toast';
 
 export interface LaunchData {
@@ -52,11 +55,36 @@ export function LaunchWizard() {
   const [isLaunching, setIsLaunching] = useState(false);
 
   const steps = [
-    { title: 'Token Basics', icon: Rocket, component: TokenBasicsStep },
-    { title: 'Pricing', icon: Eye, component: PricingStep },
-    { title: 'Safety Settings', icon: Shield, component: SafetyStep },
-    { title: 'AI Agent', icon: Bot, component: AIAgentStep },
-    { title: 'Review', icon: Eye, component: ReviewStep }
+    { 
+      title: 'Token Basics', 
+      icon: Rocket, 
+      component: TokenBasicsStep,
+      description: 'Name, symbol, and token details'
+    },
+    { 
+      title: 'Pricing', 
+      icon: DollarSign, 
+      component: PricingStep,
+      description: 'Initial price and liquidity settings'
+    },
+    { 
+      title: 'Safety Settings', 
+      icon: Shield, 
+      component: SafetyStep,
+      description: 'Lock duration and vesting schedule'
+    },
+    { 
+      title: 'AI Agent', 
+      icon: Bot, 
+      component: AIAgentStep,
+      description: 'Configure your community bot'
+    },
+    { 
+      title: 'Review', 
+      icon: Eye, 
+      component: ReviewStep,
+      description: 'Final review and launch'
+    }
   ];
 
   const updateData = (updates: Partial<LaunchData>) => {
@@ -99,39 +127,22 @@ export function LaunchWizard() {
   const CurrentStepComponent = steps[currentStep].component;
 
   return (
-    <div className="bg-surface/50 backdrop-blur-sm rounded-xl border border-border overflow-hidden">
+    <Card variant="glass" padding="none" className="overflow-hidden">
       {/* Progress Bar */}
       <div className="p-6 border-b border-border">
-        <div className="flex items-center justify-between mb-4">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            const isActive = index === currentStep;
-            const isCompleted = index < currentStep;
-            
-            return (
-              <div key={index} className="flex items-center">
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${
-                  isActive 
-                    ? 'border-primary bg-primary text-white' 
-                    : isCompleted 
-                    ? 'border-primary bg-primary/20 text-primary'
-                    : 'border-border bg-surface-hover text-text-muted'
-                }`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                {index < steps.length - 1 && (
-                  <div className={`w-16 h-0.5 mx-2 ${
-                    isCompleted ? 'bg-primary' : 'bg-border'
-                  }`} />
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <Progress 
+          steps={steps}
+          currentStep={currentStep}
+          orientation="horizontal"
+          showLabels={false}
+        />
         
-        <div className="text-center">
+        <div className="text-center mt-6">
           <h2 className="text-xl font-semibold">{steps[currentStep].title}</h2>
-          <p className="text-text-muted text-sm">Step {currentStep + 1} of {steps.length}</p>
+          <p className="text-text-muted text-sm mt-1">{steps[currentStep].description}</p>
+          <div className="text-xs text-text-muted mt-2">
+            Step {currentStep + 1} of {steps.length}
+          </div>
         </div>
       </div>
 
@@ -156,26 +167,49 @@ export function LaunchWizard() {
       </div>
 
       {/* Navigation */}
-      <div className="px-6 py-4 border-t border-border flex justify-between">
-        <button
+      <div className="px-6 py-4 border-t border-border flex justify-between items-center">
+        <Button
+          variant="ghost"
           onClick={prevStep}
           disabled={currentStep === 0}
-          className="flex items-center space-x-2 px-4 py-2 text-text-muted hover:text-text disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          icon={<ChevronLeft className="h-4 w-4" />}
+          iconPosition="left"
         >
-          <ChevronLeft className="h-4 w-4" />
-          <span>Previous</span>
-        </button>
+          Previous
+        </Button>
+
+        <div className="flex items-center space-x-2 text-xs text-text-muted">
+          {steps.map((_, index) => (
+            <div
+              key={index}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                index <= currentStep ? 'bg-primary' : 'bg-border'
+              }`}
+            />
+          ))}
+        </div>
 
         {currentStep < steps.length - 1 ? (
-          <button
+          <Button
+            variant="primary"
             onClick={nextStep}
-            className="flex items-center space-x-2 px-6 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors"
+            icon={<ChevronRight className="h-4 w-4" />}
+            iconPosition="right"
           >
-            <span>Next</span>
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        ) : null}
+            Next Step
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            onClick={handleLaunch}
+            loading={isLaunching}
+            icon={<Rocket className="h-4 w-4" />}
+            iconPosition="left"
+          >
+            {isLaunching ? 'Launching...' : 'Launch Token'}
+          </Button>
+        )}
       </div>
-    </div>
+    </Card>
   );
 }
