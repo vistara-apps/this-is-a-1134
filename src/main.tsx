@@ -5,16 +5,10 @@ import {
 } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
 import {
-  mainnet,
-  polygon,
-  optimism,
-  arbitrum,
-  base,
-} from 'wagmi/chains';
-import {
   QueryClientProvider,
   QueryClient,
 } from "@tanstack/react-query";
+import { supportedChains } from './config/chains';
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
@@ -24,7 +18,8 @@ import './index.css'
 const config = getDefaultConfig({
   appName: "OkieLaunch",
   projectId: "9f4bd472c01ba49282b42e5e1874c2af",
-  chains: [mainnet, polygon, optimism, arbitrum, base],
+  chains: supportedChains,
+  ssr: false,
 });
 
 const queryClient = new QueryClient();

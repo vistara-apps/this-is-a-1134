@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { Menu, X, Rocket, BarChart3, ArrowLeftRight, Users } from 'lucide-react';
+import { Menu, X, Rocket, BarChart3, ArrowLeftRight, Users, Coins } from 'lucide-react';
+import { NetworkSwitcher } from './NetworkSwitcher';
+import { NetworkStatus } from './NetworkStatus';
+import { useAccount } from 'wagmi';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { isConnected } = useAccount();
 
   const navigation = [
     { name: 'Home', href: '/', icon: Rocket },
     { name: 'Launch', href: '/launch', icon: Rocket },
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+    { name: 'Tokens', href: '/tokens', icon: Coins },
     { name: 'Swap', href: '/swap', icon: ArrowLeftRight },
     { name: 'Referrals', href: '/referrals', icon: Users },
   ];
@@ -49,8 +54,18 @@ export function Header() {
             })}
           </nav>
 
-          {/* Wallet Connect & Mobile Menu */}
+          {/* Network Status, Switcher & Wallet Connect & Mobile Menu */}
           <div className="flex items-center space-x-4">
+            <div className="hidden lg:block">
+              <NetworkStatus />
+            </div>
+            
+            {isConnected && (
+              <div className="hidden sm:block">
+                <NetworkSwitcher />
+              </div>
+            )}
+            
             <ConnectButton />
             
             {/* Mobile menu button */}
@@ -70,6 +85,11 @@ export function Header() {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
+            <div className="px-3 mb-4 space-y-3">
+              <NetworkStatus />
+              {isConnected && <NetworkSwitcher />}
+            </div>
+            
             <nav className="flex flex-col space-y-2">
               {navigation.map((item) => {
                 const Icon = item.icon;

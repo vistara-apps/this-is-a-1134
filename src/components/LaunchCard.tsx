@@ -1,6 +1,9 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, Shield, Users, DollarSign } from 'lucide-react';
+import { TrendingUp, TrendingDown, Shield, Users, DollarSign, ExternalLink } from 'lucide-react';
 import { SparklineChart } from './SparklineChart';
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
+import { motion } from 'framer-motion';
 
 interface Launch {
   id: string;
@@ -40,27 +43,42 @@ export function LaunchCard({ launch, variant = 'default' }: LaunchCardProps) {
   };
 
   return (
-    <div className="group bg-surface/80 backdrop-blur-sm rounded-lg border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-card-hover overflow-hidden">
+    <Card variant="glass" padding="none" hover className="group overflow-hidden">
       {/* Header */}
       <div className="p-6 pb-4">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg flex items-center justify-center">
+            <motion.div 
+              className="w-12 h-12 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg flex items-center justify-center"
+              whileHover={{ scale: 1.1 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            >
               <span className="text-lg font-bold">{launch.symbol.charAt(0)}</span>
-            </div>
+            </motion.div>
             <div>
               <div className="flex items-center space-x-2">
-                <h3 className="font-semibold text-lg">{launch.name}</h3>
+                <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
+                  {launch.name}
+                </h3>
                 {launch.isVerified && (
-                  <Shield className="h-4 w-4 text-primary" />
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <Shield className="h-4 w-4 text-primary" />
+                  </motion.div>
                 )}
               </div>
               <p className="text-text-muted">${launch.symbol}</p>
             </div>
           </div>
-          <div className={`px-2 py-1 rounded-md text-xs font-medium ${healthColor} bg-surface-hover`}>
+          <motion.div 
+            className={`px-3 py-1.5 rounded-full text-xs font-medium ${healthColor} bg-surface-hover border border-border`}
+            whileHover={{ scale: 1.05 }}
+          >
             {launch.healthScore}/100
-          </div>
+          </motion.div>
         </div>
 
         {/* Price and Change */}
@@ -106,14 +124,26 @@ export function LaunchCard({ launch, variant = 'default' }: LaunchCardProps) {
       {/* Actions */}
       <div className="px-6 pb-6">
         <div className="grid grid-cols-2 gap-3">
-          <button className="px-4 py-2 bg-primary hover:bg-primary-hover text-white font-medium rounded-lg transition-colors text-sm">
-            🚀 Ape In
-          </button>
-          <button className="px-4 py-2 bg-surface-hover hover:bg-border text-text font-medium rounded-lg transition-colors text-sm">
-            📊 Stats
-          </button>
+          <Button
+            variant="primary"
+            size="sm"
+            fullWidth
+            icon="🚀"
+            iconPosition="left"
+          >
+            Ape In
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            fullWidth
+            icon={<ExternalLink className="h-4 w-4" />}
+            iconPosition="left"
+          >
+            View Stats
+          </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

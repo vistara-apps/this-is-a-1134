@@ -1,6 +1,8 @@
-import React from 'react';
-import { Upload, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Upload, Sparkles, Hash, FileText, Coins } from 'lucide-react';
 import { LaunchData } from '../LaunchWizard';
+import { Input } from '../ui/Input';
+import { Button } from '../ui/Button';
 
 interface TokenBasicsStepProps {
   data: LaunchData;
@@ -8,11 +10,59 @@ interface TokenBasicsStepProps {
 }
 
 export function TokenBasicsStep({ data, updateData }: TokenBasicsStepProps) {
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const trendingNames = ['PepeAI', 'MoonCoin', 'SafeDoge', 'RocketCat', 'DiamondHands'];
   
   const suggestName = () => {
     const randomName = trendingNames[Math.floor(Math.random() * trendingNames.length)];
     updateData({ name: randomName, symbol: randomName.toUpperCase().slice(0, 6) });
+    // Clear errors when auto-generating
+    setErrors({});
+  };
+
+  const validateField = (field: string, value: string) => {
+    const newErrors = { ...errors };
+    
+    switch (field) {
+      case 'name':
+        if (!value.trim()) {
+          newErrors.name = 'Token name is required';
+        } else if (value.length < 2) {
+          newErrors.name = 'Name must be at least 2 characters';
+        } else if (value.length > 50) {
+          newErrors.name = 'Name must be less than 50 characters';
+        } else {
+          delete newErrors.name;
+        }
+        break;
+      case 'symbol':
+        if (!value.trim()) {
+          newErrors.symbol = 'Symbol is required';
+        } else if (value.length < 2) {
+          newErrors.symbol = 'Symbol must be at least 2 characters';
+        } else if (value.length > 10) {
+          newErrors.symbol = 'Symbol must be less than 10 characters';
+        } else if (!/^[A-Z0-9]+$/.test(value)) {
+          newErrors.symbol = 'Symbol must contain only uppercase letters and numbers';
+        } else {
+          delete newErrors.symbol;
+        }
+        break;
+      case 'supply':
+        const supply = parseFloat(value);
+        if (!value.trim()) {
+          newErrors.supply = 'Supply is required';
+        } else if (isNaN(supply) || supply <= 0) {
+          newErrors.supply = 'Supply must be a positive number';
+        } else if (supply > 1e18) {
+          newErrors.supply = 'Supply is too large';
+        } else {
+          delete newErrors.supply;
+        }
+        break;
+    }
+    
+    setErrors(newErrors);
   };
 
   return (
@@ -25,51 +75,59 @@ export function TokenBasicsStep({ data, updateData }: TokenBasicsStepProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium mb-2">Token Name</label>
-          <div className="relative">
-            <input
-              type="text"
-              value={data.name}
-              onChange={(e) => updateData({ name: e.target.value })}
-              placeholder="e.g. Awesome Token"
-              className="w-full px-4 py-3 bg-surface border border-border rounded-lg focus:border-primary focus:outline-none transition-colors"
-            />
-            <button
-              onClick={suggestName}
-              className="absolute right-3 top-3 text-accent hover:text-accent-hover transition-colors"
-              title="Generate random name"
-            >
-              <Sparkles className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">Symbol</label>
-          <input
-            type="text"
-            value={data.symbol}
-            onChange={(e) => updateData({ symbol: e.target.value.toUpperCase() })}
-            placeholder="e.g. AWESOME"
-            className="w-full px-4 py-3 bg-surface border border-border rounded-lg focus:border-primary focus:outline-none transition-colors"
+        <div className="relative">
+          <Input
+            label="Token Name"
+            value={data.name}
+            onChange={(e) => {
+              const value = e.target.value;
+              updateData({ name: value });
+              validateField('name', value);
+            }}
+            placeholder="e.g. Awesome Token"
+            leftIcon={<FileText className="h-5 w-5" />}
+            error={errors.name}
+            helperText="Choose a memorable name for your token"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={suggestName}
+            className="absolute top-8 right-2"
+            icon={<Sparkles className="h-4 w-4" />}
+            title="Generate random name"
           />
         </div>
+
+        <Input
+          label="Symbol"
+          value={data.symbol}
+          onChange={(e) => {
+            const value = e.target.value.toUpperCase();
+            updateData({ symbol: value });
+            validateField('symbol', value);
+          }}
+          placeholder="e.g. AWESOME"
+          leftIcon={<Hash className="h-5 w-5" />}
+          error={errors.symbol}
+          helperText="3-10 characters, uppercase letters and numbers only"
+        />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-2">Total Supply</label>
-        <input
-          type="number"
-          value={data.supply}
-          onChange={(e) => updateData({ supply: e.target.value })}
-          placeholder="1000000"
-          className="w-full px-4 py-3 bg-surface border border-border rounded-lg focus:border-primary focus:outline-none transition-colors"
-        />
-        <p className="text-text-muted text-xs mt-1">
-          Total number of tokens that will ever exist
-        </p>
-      </div>
+      <Input
+        label="Total Supply"
+        type="number"
+        value={data.supply}
+        onChange={(e) => {
+          const value = e.target.value;
+          updateData({ supply: value });
+          validateField('supply', value);
+        }}
+        placeholder="1000000"
+        leftIcon={<Coins className="h-5 w-5" />}
+        error={errors.supply}
+        helperText="Total number of tokens that will ever exist"
+      />
 
       <div>
         <label className="block text-sm font-medium mb-2">Description</label>
@@ -80,6 +138,9 @@ export function TokenBasicsStep({ data, updateData }: TokenBasicsStepProps) {
           rows={4}
           className="w-full px-4 py-3 bg-surface border border-border rounded-lg focus:border-primary focus:outline-none transition-colors resize-none"
         />
+        <p className="text-text-muted text-xs mt-1">
+          Optional: Describe your token's purpose and vision
+        </p>
       </div>
 
       <div>

@@ -3,6 +3,7 @@ import { HealthScoreCard } from '../components/dashboard/HealthScoreCard';
 import { MetricsGrid } from '../components/dashboard/MetricsGrid';
 import { LaunchesTable } from '../components/dashboard/LaunchesTable';
 import { AgentActivityFeed } from '../components/dashboard/AgentActivityFeed';
+import { AllTokensTable } from '../components/AllTokensTable';
 import { Filter, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -12,6 +13,7 @@ export function DashboardPage() {
   const tabs = [
     { id: 'overview', name: 'Overview' },
     { id: 'launches', name: 'My Launches' },
+    { id: 'tokens', name: 'All Tokens' },
     { id: 'agent', name: 'AI Agent' },
     { id: 'analytics', name: 'Analytics' }
   ];
@@ -79,6 +81,12 @@ export function DashboardPage() {
         {activeTab === 'launches' && (
           <div>
             <LaunchesTable showAll />
+          </div>
+        )}
+
+        {activeTab === 'tokens' && (
+          <div>
+            <AllTokensTable maxHeight="calc(100vh - 300px)" />
           </div>
         )}
 

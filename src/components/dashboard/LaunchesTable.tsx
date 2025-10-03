@@ -1,49 +1,48 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ExternalLink, TrendingUp, TrendingDown, MoreHorizontal } from 'lucide-react';
+import { BlockchainService, TokenData } from '../../services/blockchain';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { useAccount } from 'wagmi';
 
 interface LaunchesTableProps {
   showAll?: boolean;
 }
 
 export function LaunchesTable({ showAll = false }: LaunchesTableProps) {
-  const launches = [
-    {
-      id: '1',
-      name: 'PepeAI',
-      symbol: 'PEPAI',
-      status: 'live',
-      price: 0.00012,
-      change24h: 45.2,
-      volume24h: 125000,
-      holders: 1247,
-      healthScore: 95,
-      launched: '2024-01-15'
-    },
-    {
-      id: '2',
-      name: 'MoonCoin',
-      symbol: 'MOON',
-      status: 'live',
-      price: 0.0034,
-      change24h: 23.7,
-      volume24h: 89000,
-      holders: 892,
-      healthScore: 87,
-      launched: '2024-01-10'
-    },
-    {
-      id: '3',
-      name: 'SafeDoge',
-      symbol: 'SDOGE',
-      status: 'locked',
-      price: 0.000056,
-      change24h: -8.3,
-      volume24h: 45000,
-      holders: 654,
-      healthScore: 72,
-      launched: '2024-01-05'
-    }
-  ];
+  const [launches, setLaunches] = useState<TokenData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { address } = useAccount();
+  const blockchainService = BlockchainService.getInstance();
+
+  useEffect(() => {
+    const fetchUserTokens = async () => {
+      if (!address) {
+        setLaunches([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const userTokens = await blockchainService.getUserTokens(address);
+        setLaunches(userTokens);
+      } catch (err) {
+        console.error('Error fetching user tokens:', err);
+        setError('Failed to load your tokens');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserTokens();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchUserTokens, 30000);
+    return () => clearInterval(interval);
+  }, [address]);
 
   const displayLaunches = showAll ? launches : launches.slice(0, 3);
 
@@ -60,13 +59,16 @@ export function LaunchesTable({ showAll = false }: LaunchesTableProps) {
     return num.toString();
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'live': return 'text-success bg-success/20';
-      case 'locked': return 'text-warning bg-warning/20';
-      case 'paused': return 'text-danger bg-danger/20';
-      default: return 'text-text-muted bg-surface-hover';
-    }
+  const getStatusColor = (isVerified: boolean, liquidityLocked: boolean) => {
+    if (isVerified && liquidityLocked) return 'text-success bg-success/20';
+    if (liquidityLocked) return 'text-warning bg-warning/20';
+    return 'text-text-muted bg-surface-hover';
+  };
+
+  const getStatusText = (isVerified: boolean, liquidityLocked: boolean) => {
+    if (isVerified && liquidityLocked) return 'Live';
+    if (liquidityLocked) return 'Locked';
+    return 'Pending';
   };
 
   const getHealthScoreColor = (score: number) => {
@@ -74,6 +76,53 @@ export function LaunchesTable({ showAll = false }: LaunchesTableProps) {
     if (score >= 60) return 'text-warning';
     return 'text-danger';
   };
+
+  if (loading) {
+    return (
+      <div className="bg-surface/80 backdrop-blur-sm rounded-lg border border-border p-12">
+        <div className="flex justify-center items-center">
+          <LoadingSpinner size="lg" />
+          <span className="ml-3 text-text-muted">Loading your tokens...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-surface/80 backdrop-blur-sm rounded-lg border border-border p-12 text-center">
+        <p className="text-danger mb-4">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!address) {
+    return (
+      <div className="bg-surface/80 backdrop-blur-sm rounded-lg border border-border p-12 text-center">
+        <p className="text-text-muted">Connect your wallet to view your tokens</p>
+      </div>
+    );
+  }
+
+  if (displayLaunches.length === 0) {
+    return (
+      <div className="bg-surface/80 backdrop-blur-sm rounded-lg border border-border p-12 text-center">
+        <p className="text-text-muted mb-4">You haven't launched any tokens yet</p>
+        <a
+          href="/launch"
+          className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors inline-block"
+        >
+          Launch Your First Token
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-surface/80 backdrop-blur-sm rounded-lg border border-border overflow-hidden">
@@ -114,62 +163,69 @@ export function LaunchesTable({ showAll = false }: LaunchesTableProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {displayLaunches.map((launch) => (
-              <tr key={launch.id} className="hover:bg-surface-hover transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg flex items-center justify-center mr-3">
-                      <span className="text-sm font-bold">{launch.symbol.charAt(0)}</span>
+            {displayLaunches.map((launch) => {
+              const change24h = Math.random() * 100 - 50; // TODO: Get real price change data
+              return (
+                <tr key={launch.address} className="hover:bg-surface-hover transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg flex items-center justify-center mr-3">
+                        <span className="text-sm font-bold">{launch.symbol.charAt(0)}</span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">{launch.name}</div>
+                        <div className="text-sm text-text-muted">${launch.symbol}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-sm font-medium">{launch.name}</div>
-                      <div className="text-sm text-text-muted">${launch.symbol}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(launch.isVerified, launch.liquidityLocked)}`}>
+                      {getStatusText(launch.isVerified, launch.liquidityLocked)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    ${formatPrice(launch.price)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className={`flex items-center text-sm ${
+                      change24h > 0 ? 'text-success' : 'text-danger'
+                    }`}>
+                      {change24h > 0 ? (
+                        <TrendingUp className="h-4 w-4 mr-1" />
+                      ) : (
+                        <TrendingDown className="h-4 w-4 mr-1" />
+                      )}
+                      {Math.abs(change24h).toFixed(1)}%
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(launch.status)}`}>
-                    {launch.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  ${formatPrice(launch.price)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className={`flex items-center text-sm ${
-                    launch.change24h > 0 ? 'text-success' : 'text-danger'
-                  }`}>
-                    {launch.change24h > 0 ? (
-                      <TrendingUp className="h-4 w-4 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-4 w-4 mr-1" />
-                    )}
-                    {Math.abs(launch.change24h).toFixed(1)}%
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  ${formatNumber(launch.volume24h)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  {formatNumber(launch.holders)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`text-sm font-medium ${getHealthScoreColor(launch.healthScore)}`}>
-                    {launch.healthScore}/100
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <div className="flex items-center space-x-2">
-                    <button className="text-text-muted hover:text-text">
-                      <ExternalLink className="h-4 w-4" />
-                    </button>
-                    <button className="text-text-muted hover:text-text">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    ${formatNumber(launch.volume24h)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {formatNumber(launch.holders)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`text-sm font-medium ${getHealthScoreColor(launch.healthScore)}`}>
+                      {launch.healthScore}/100
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        className="text-text-muted hover:text-text"
+                        onClick={() => window.open(`https://www.okx.com/web3/explorer/xlayer/address/${launch.address}`, '_blank')}
+                        title="View on Explorer"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </button>
+                      <button className="text-text-muted hover:text-text">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

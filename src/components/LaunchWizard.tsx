@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Rocket, Shield, Bot, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Rocket, Shield, Bot, Eye, DollarSign } from 'lucide-react';
 import { TokenBasicsStep } from './wizard/TokenBasicsStep';
 import { PricingStep } from './wizard/PricingStep';
 import { SafetyStep } from './wizard/SafetyStep';
 import { AIAgentStep } from './wizard/AIAgentStep';
 import { ReviewStep } from './wizard/ReviewStep';
+import { Progress } from './ui/Progress';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
+import { useTokenFactory } from '../hooks/useTokenFactory';
+import { useAccount, useChainId } from 'wagmi';
+import { BlockchainService } from '../services/blockchain';
 import toast from 'react-hot-toast';
 
 export interface LaunchData {
@@ -50,13 +56,77 @@ export function LaunchWizard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [launchData, setLaunchData] = useState<LaunchData>(initialData);
   const [isLaunching, setIsLaunching] = useState(false);
+  
+  const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { createToken, hash, isPending, isConfirming, isSuccess, error } = useTokenFactory();
+  const blockchainService = BlockchainService.getInstance();
+
+  // Watch for successful token deployment
+  React.useEffect(() => {
+    if (isSuccess && hash) {
+      toast.success('🚀 Token launched successfully!', { id: 'launch' });
+      
+      // Store launch data in localStorage for dashboard
+      const launchInfo = {
+        ...launchData,
+        transactionHash: hash,
+        creator: address,
+        createdAt: Date.now(),
+      };
+      
+      const existingLaunches = JSON.parse(localStorage.getItem('userLaunches') || '[]');
+      existingLaunches.push(launchInfo);
+      localStorage.setItem('userLaunches', JSON.stringify(existingLaunches));
+      
+      setIsLaunching(false);
+      
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 2000);
+    }
+  }, [isSuccess, hash, launchData, address]);
+
+  // Watch for transaction errors
+  React.useEffect(() => {
+    if (error) {
+      toast.error(error.message || 'Token deployment failed', { id: 'launch' });
+      setIsLaunching(false);
+    }
+  }, [error]);
 
   const steps = [
-    { title: 'Token Basics', icon: Rocket, component: TokenBasicsStep },
-    { title: 'Pricing', icon: Eye, component: PricingStep },
-    { title: 'Safety Settings', icon: Shield, component: SafetyStep },
-    { title: 'AI Agent', icon: Bot, component: AIAgentStep },
-    { title: 'Review', icon: Eye, component: ReviewStep }
+    { 
+      title: 'Token Basics', 
+      icon: Rocket, 
+      component: TokenBasicsStep,
+      description: 'Name, symbol, and token details'
+    },
+    { 
+      title: 'Pricing', 
+      icon: DollarSign, 
+      component: PricingStep,
+      description: 'Initial price and liquidity settings'
+    },
+    { 
+      title: 'Safety Settings', 
+      icon: Shield, 
+      component: SafetyStep,
+      description: 'Lock duration and vesting schedule'
+    },
+    { 
+      title: 'AI Agent', 
+      icon: Bot, 
+      component: AIAgentStep,
+      description: 'Configure your community bot'
+    },
+    { 
+      title: 'Review', 
+      icon: Eye, 
+      component: ReviewStep,
+      description: 'Final review and launch'
+    }
   ];
 
   const updateData = (updates: Partial<LaunchData>) => {
@@ -76,22 +146,38 @@ export function LaunchWizard() {
   };
 
   const handleLaunch = async () => {
+    if (!isConnected || !address) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    // Validate required fields
+    if (!launchData.name || !launchData.symbol || !launchData.supply) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
     setIsLaunching(true);
     
     try {
-      // Simulate transaction
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Check if we're on the correct network
+      if (chainId !== 196 && chainId !== 195) {
+        toast.error('Please switch to X Layer network');
+        setIsLaunching(false);
+        return;
+      }
+
+      toast.loading('Deploying your token...', { id: 'launch' });
+
+      // Deploy token using the wagmi hook
+      await createToken(launchData);
       
-      toast.success('🚀 Token launched successfully!');
-      
-      // In a real app, redirect to dashboard
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 2000);
+      // The hook handles the transaction, we'll watch for success/error in useEffect
+      // Don't set launching to false here - let the success/error handlers do it
       
     } catch (error) {
-      toast.error('Launch failed. Please try again.');
-    } finally {
+      console.error('Launch error:', error);
+      toast.error(error instanceof Error ? error.message : 'Launch failed. Please try again.', { id: 'launch' });
       setIsLaunching(false);
     }
   };
@@ -99,39 +185,22 @@ export function LaunchWizard() {
   const CurrentStepComponent = steps[currentStep].component;
 
   return (
-    <div className="bg-surface/50 backdrop-blur-sm rounded-xl border border-border overflow-hidden">
+    <Card variant="glass" padding="none" className="overflow-hidden">
       {/* Progress Bar */}
       <div className="p-6 border-b border-border">
-        <div className="flex items-center justify-between mb-4">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            const isActive = index === currentStep;
-            const isCompleted = index < currentStep;
-            
-            return (
-              <div key={index} className="flex items-center">
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${
-                  isActive 
-                    ? 'border-primary bg-primary text-white' 
-                    : isCompleted 
-                    ? 'border-primary bg-primary/20 text-primary'
-                    : 'border-border bg-surface-hover text-text-muted'
-                }`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                {index < steps.length - 1 && (
-                  <div className={`w-16 h-0.5 mx-2 ${
-                    isCompleted ? 'bg-primary' : 'bg-border'
-                  }`} />
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <Progress 
+          steps={steps}
+          currentStep={currentStep}
+          orientation="horizontal"
+          showLabels={false}
+        />
         
-        <div className="text-center">
+        <div className="text-center mt-6">
           <h2 className="text-xl font-semibold">{steps[currentStep].title}</h2>
-          <p className="text-text-muted text-sm">Step {currentStep + 1} of {steps.length}</p>
+          <p className="text-text-muted text-sm mt-1">{steps[currentStep].description}</p>
+          <div className="text-xs text-text-muted mt-2">
+            Step {currentStep + 1} of {steps.length}
+          </div>
         </div>
       </div>
 
@@ -156,26 +225,49 @@ export function LaunchWizard() {
       </div>
 
       {/* Navigation */}
-      <div className="px-6 py-4 border-t border-border flex justify-between">
-        <button
+      <div className="px-6 py-4 border-t border-border flex justify-between items-center">
+        <Button
+          variant="ghost"
           onClick={prevStep}
           disabled={currentStep === 0}
-          className="flex items-center space-x-2 px-4 py-2 text-text-muted hover:text-text disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          icon={<ChevronLeft className="h-4 w-4" />}
+          iconPosition="left"
         >
-          <ChevronLeft className="h-4 w-4" />
-          <span>Previous</span>
-        </button>
+          Previous
+        </Button>
+
+        <div className="flex items-center space-x-2 text-xs text-text-muted">
+          {steps.map((_, index) => (
+            <div
+              key={index}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                index <= currentStep ? 'bg-primary' : 'bg-border'
+              }`}
+            />
+          ))}
+        </div>
 
         {currentStep < steps.length - 1 ? (
-          <button
+          <Button
+            variant="primary"
             onClick={nextStep}
-            className="flex items-center space-x-2 px-6 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors"
+            icon={<ChevronRight className="h-4 w-4" />}
+            iconPosition="right"
           >
-            <span>Next</span>
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        ) : null}
+            Next Step
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            onClick={handleLaunch}
+            loading={isLaunching}
+            icon={<Rocket className="h-4 w-4" />}
+            iconPosition="left"
+          >
+            {isLaunching ? 'Launching...' : 'Launch Token'}
+          </Button>
+        )}
       </div>
-    </div>
+    </Card>
   );
 }
