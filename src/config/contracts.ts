@@ -3,13 +3,13 @@ import { Address } from 'viem';
 // Contract addresses (these will be updated after deployment)
 export const CONTRACT_ADDRESSES = {
   [196]: { // X Layer Mainnet
-    TOKEN_FACTORY: (import.meta.env.VITE_TOKEN_FACTORY_ADDRESS || '0x') as Address,
+    TOKEN_FACTORY: (import.meta.env.VITE_TOKEN_FACTORY_ADDRESS || '0xeb554444b5c49bab7781b1cfc0e3be211053c6d7') as Address,
     OKIE_SWAP: (import.meta.env.VITE_OKIE_SWAP_ADDRESS || '0x') as Address,
     OKIE_TOKEN: (import.meta.env.VITE_OKIE_TOKEN_ADDRESS || '0x') as Address,
     LIQUIDITY_LOCKER: (import.meta.env.VITE_LIQUIDITY_LOCKER_ADDRESS || '0x') as Address,
   },
   [195]: { // X Layer Testnet
-    TOKEN_FACTORY: (import.meta.env.VITE_TOKEN_FACTORY_ADDRESS || '0x') as Address,
+    TOKEN_FACTORY: (import.meta.env.VITE_TOKEN_FACTORY_ADDRESS || '0xeb554444b5c49bab7781b1cfc0e3be211053c6d7') as Address,
     OKIE_SWAP: (import.meta.env.VITE_OKIE_SWAP_ADDRESS || '0x') as Address,
     OKIE_TOKEN: (import.meta.env.VITE_OKIE_TOKEN_ADDRESS || '0x') as Address,
     LIQUIDITY_LOCKER: (import.meta.env.VITE_LIQUIDITY_LOCKER_ADDRESS || '0x') as Address,

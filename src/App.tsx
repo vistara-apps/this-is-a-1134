@@ -7,6 +7,7 @@ import { LaunchPage } from './pages/LaunchPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { SwapPage } from './pages/SwapPage';
 import { ReferralsPage } from './pages/ReferralsPage';
+import { TokensPage } from './pages/TokensPage';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/swap" element={<SwapPage />} />
             <Route path="/referrals" element={<ReferralsPage />} />
+            <Route path="/tokens" element={<TokensPage />} />
           </Routes>
         </main>
         <Toaster 

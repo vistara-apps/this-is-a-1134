@@ -164,14 +164,14 @@ export function HomePage() {
                 </Button>
               </Link>
               
-              <Link to="/swap">
+              <Link to="/tokens">
                 <Button
                   variant="secondary"
                   size="lg"
                   icon={<ArrowRight className="h-5 w-5" />}
                   iconPosition="right"
                 >
-                  Explore Tokens
+                  Explore All Tokens
                 </Button>
               </Link>
             </div>

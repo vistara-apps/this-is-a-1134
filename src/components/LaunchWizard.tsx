@@ -59,8 +59,42 @@ export function LaunchWizard() {
   
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const { createToken, isPending, isConfirming, isSuccess, error } = useTokenFactory();
+  const { createToken, hash, isPending, isConfirming, isSuccess, error } = useTokenFactory();
   const blockchainService = BlockchainService.getInstance();
+
+  // Watch for successful token deployment
+  React.useEffect(() => {
+    if (isSuccess && hash) {
+      toast.success('🚀 Token launched successfully!', { id: 'launch' });
+      
+      // Store launch data in localStorage for dashboard
+      const launchInfo = {
+        ...launchData,
+        transactionHash: hash,
+        creator: address,
+        createdAt: Date.now(),
+      };
+      
+      const existingLaunches = JSON.parse(localStorage.getItem('userLaunches') || '[]');
+      existingLaunches.push(launchInfo);
+      localStorage.setItem('userLaunches', JSON.stringify(existingLaunches));
+      
+      setIsLaunching(false);
+      
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 2000);
+    }
+  }, [isSuccess, hash, launchData, address]);
+
+  // Watch for transaction errors
+  React.useEffect(() => {
+    if (error) {
+      toast.error(error.message || 'Token deployment failed', { id: 'launch' });
+      setIsLaunching(false);
+    }
+  }, [error]);
 
   const steps = [
     { 
@@ -135,37 +169,15 @@ export function LaunchWizard() {
 
       toast.loading('Deploying your token...', { id: 'launch' });
 
-      // Deploy token using the blockchain service
-      const result = await blockchainService.deployToken(launchData);
+      // Deploy token using the wagmi hook
+      await createToken(launchData);
       
-      if (result.success && result.tokenAddress) {
-        toast.success('🚀 Token launched successfully!', { id: 'launch' });
-        
-        // Store launch data in localStorage for dashboard
-        const launchInfo = {
-          ...launchData,
-          tokenAddress: result.tokenAddress,
-          transactionHash: result.transactionHash,
-          creator: address,
-          createdAt: Date.now(),
-        };
-        
-        const existingLaunches = JSON.parse(localStorage.getItem('userLaunches') || '[]');
-        existingLaunches.push(launchInfo);
-        localStorage.setItem('userLaunches', JSON.stringify(existingLaunches));
-        
-        // Redirect to dashboard after a short delay
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 2000);
-      } else {
-        throw new Error(result.error || 'Token deployment failed');
-      }
+      // The hook handles the transaction, we'll watch for success/error in useEffect
+      // Don't set launching to false here - let the success/error handlers do it
       
     } catch (error) {
       console.error('Launch error:', error);
       toast.error(error instanceof Error ? error.message : 'Launch failed. Please try again.', { id: 'launch' });
-    } finally {
       setIsLaunching(false);
     }
   };

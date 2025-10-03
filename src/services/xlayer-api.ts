@@ -121,7 +121,7 @@ export class XLayerAPIService {
         sort = 'volume',
         page = 1,
         pageSize = 100,
-        status = 0,
+        status,
         order = 'desc',
         search
       } = params;
@@ -130,9 +130,12 @@ export class XLayerAPIService {
         sort,
         page: page.toString(),
         pageSize: pageSize.toString(),
-        status: status.toString(),
         order
       });
+
+      if (status !== undefined) {
+        queryParams.append('status', status.toString());
+      }
 
       if (search) {
         queryParams.append('search', search);

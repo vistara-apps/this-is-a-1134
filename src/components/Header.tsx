@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { Menu, X, Rocket, BarChart3, ArrowLeftRight, Users } from 'lucide-react';
+import { Menu, X, Rocket, BarChart3, ArrowLeftRight, Users, Coins } from 'lucide-react';
 import { NetworkSwitcher } from './NetworkSwitcher';
 import { NetworkStatus } from './NetworkStatus';
 import { useAccount } from 'wagmi';
@@ -15,6 +15,7 @@ export function Header() {
     { name: 'Home', href: '/', icon: Rocket },
     { name: 'Launch', href: '/launch', icon: Rocket },
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+    { name: 'Tokens', href: '/tokens', icon: Coins },
     { name: 'Swap', href: '/swap', icon: ArrowLeftRight },
     { name: 'Referrals', href: '/referrals', icon: Users },
   ];

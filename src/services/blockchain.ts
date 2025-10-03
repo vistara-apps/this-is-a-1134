@@ -44,36 +44,16 @@ export class BlockchainService {
     return BlockchainService.instance;
   }
 
-  // Token deployment
+  // Token deployment - This will be handled by the LaunchWizard using useTokenFactory hook
   async deployToken(launchData: LaunchData): Promise<{
     success: boolean;
     tokenAddress?: Address;
     transactionHash?: string;
     error?: string;
   }> {
-    try {
-      // This would integrate with the useTokenFactory hook
-      // For now, we'll simulate the deployment process
-      console.log('Deploying token with data:', launchData);
-      
-      // Simulate deployment delay
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Mock successful deployment
-      const mockTokenAddress = '0x1234567890123456789012345678901234567890' as Address;
-      const mockTxHash = '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
-      
-      return {
-        success: true,
-        tokenAddress: mockTokenAddress,
-        transactionHash: mockTxHash,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
-      };
-    }
+    // This method should not be called directly
+    // Token deployment is handled by the LaunchWizard component using wagmi hooks
+    throw new Error('Token deployment should be handled by LaunchWizard component using useTokenFactory hook');
   }
 
   // Get token information
